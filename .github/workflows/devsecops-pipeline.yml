@@ -64,7 +64,7 @@ jobs:
 
   build-and-sbom:
     name: 5. Build, Container Scan & SBOM
-    needs: [sast, sca, iac-security]
+    needs: [sca, iac-security]
     runs-on: ubuntu-latest
     env:
       REGISTRY: ghcr.io
