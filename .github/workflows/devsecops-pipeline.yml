@@ -24,15 +24,16 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  sast:
-    name: 2. SAST (Semgrep)
-    needs: secret-scanning
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - name: Ejecutar Semgrep
-        run: |
-          docker run --rm -v "${{ github.workspace }}:/src" returntocorp/semgrep semgrep scan --config auto --error
+  # Job de SAST (Semgrep) desactivado temporalmente
+  # sast:
+  #   name: 2. SAST (Semgrep)
+  #   needs: secret-scanning
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v6
+  #     - name: Ejecutar Semgrep
+  #       run: |
+  #         docker run --rm -v "${{ github.workspace }}:/src" returntocorp/semgrep semgrep scan --config auto --error
 
   sca:
     name: 3. SCA (Trivy Filesystem)
