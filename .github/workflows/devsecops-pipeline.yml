@@ -16,11 +16,11 @@ jobs:
     name: 1. Secret Scanning (Gitleaks)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608
         with:
           fetch-depth: 0
       - name: Gitleaks Scan
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@40109b8d7a2770466d8686a4dfcf0e52b4cceb90
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -29,7 +29,7 @@ jobs:
     needs: secret-scanning
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608
       - name: Ejecutar Semgrep
         run: |
           docker run --rm -v "${{ github.workspace }}:/src" returntocorp/semgrep semgrep scan --config auto --error
@@ -39,9 +39,9 @@ jobs:
     needs: secret-scanning
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608
       - name: Escaneo de librerías con Trivy
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@8b2bcaafba3f13f1e4c9f9b9e58b9425f37885c2
         with:
           scan-type: 'fs'
           scan-ref: 'app/'
@@ -53,9 +53,9 @@ jobs:
     needs: secret-scanning
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608
       - name: Escaneo de IaC con Checkov
-        uses: bridgecrewio/checkov-action@master
+        uses: bridgecrewio/checkov-action@8d3c958d99d6f80cee2762f46c62e2744735ad40
         with:
           directory: '.'
           framework: 'terraform,dockerfile'
@@ -69,10 +69,10 @@ jobs:
       REGISTRY: ghcr.io
       IMAGE_NAME: ${{ github.repository }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608
 
       - name: Iniciar sesión en GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@9780b0c442fbb0697daaaeae3af4eac1c4421c3c
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -80,40 +80,40 @@ jobs:
 
       - name: Extraer metadatos de la imagen
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@8e54479cbfc0cd1869a7c73a982a7b3c6f90329f
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: type=sha
 
       - name: Compilar Imagen Docker Local
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@4a13e500e55cf31b7a5d59a38ab2040ab0f42f56
         with:
           context: .
           load: true
           tags: ${{ steps.meta.outputs.tags }}
 
       - name: Generar SBOM con Syft
-        uses: anchore/sbom-action@v0
+        uses: anchore/sbom-action@f50fcd37e616c12745955cf0f1fba49dabdb54eb
         with:
           image: ${{ steps.meta.outputs.tags }}
           format: cyclonedx-json
           output-file: 'sbom.cyclonedx.json'
 
       - name: Publicar SBOM como Artefacto
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882
         with:
           name: sbom-cyclonedx
           path: sbom.cyclonedx.json
 
       - name: Escaneo de Imagen Docker con Trivy
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@8b2bcaafba3f13f1e4c9f9b9e58b9425f37885c2
         with:
           image-ref: ${{ steps.meta.outputs.tags }}
           severity: 'CRITICAL'
           exit-code: '1'
 
       - name: Publicar Imagen en GHCR
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@4a13e500e55cf31b7a5d59a38ab2040ab0f42f56
         with:
           context: .
           push: true
@@ -128,10 +128,10 @@ jobs:
       IMAGE_NAME: ${{ github.repository }}
     steps:
       - name: Instalar Cosign
-        uses: sigstore/cosign-installer@v3.5.0
+        uses: sigstore/cosign-installer@59acb6260c9c0ba8f4a2f9d9b48431a222b68e20
 
       - name: Iniciar sesión en GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@9780b0c442fbb0697daaaeae3af4eac1c4421c3c
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
