@@ -2,35 +2,12 @@ provider "aws" {
   region = "us-east-1"
 }
 
+# CORRECCIÓN: Bucket S3 con configuración completa
 resource "aws_s3_bucket" "bucket_seguro" {
   bucket = "mi-bucket-devsecops-demo-12345"
-  logging {
-    target_bucket = aws_s3_bucket.log_bucket.id
-    target_prefix = "s3-logs/"
-  }
-  versioning {
-    enabled = true
-  }
-  server_side_encryption_configuration {
-    rule {
-      apply_server_side_encryption_by_default {
-        sse_algorithm = "aws:kms"
-      }
-    }
-  }
 }
 
-resource "aws_s3_bucket" "log_bucket" {
-  bucket = "mi-bucket-devsecops-logs-12345"
-  logging {
-    target_bucket = aws_s3_bucket.log_bucket.id
-    target_prefix = "s3-logs/"
-  }
-  versioning {
-    enabled = true
-  }
-}
-
+# CORRECCIÓN: Bloqueo de acceso público
 resource "aws_s3_bucket_public_access_block" "publico" {
   bucket                  = aws_s3_bucket.bucket_seguro.id
   block_public_acls       = true
@@ -39,23 +16,67 @@ resource "aws_s3_bucket_public_access_block" "publico" {
   restrict_public_buckets = true
 }
 
+# CORRECCIÓN: Versionado habilitado
+resource "aws_s3_bucket_versioning" "versionado" {
+  bucket = aws_s3_bucket.bucket_seguro.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+# CORRECCIÓN: Cifrado KMS
+resource "aws_s3_bucket_server_side_encryption_configuration" "cifrado" {
+  bucket = aws_s3_bucket.bucket_seguro.id
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "aws:kms"
+    }
+  }
+}
+
+# CORRECCIÓN: Logging habilitado
+resource "aws_s3_bucket_logging" "logging" {
+  bucket = aws_s3_bucket.bucket_seguro.id
+  target_bucket = aws_s3_bucket.log_bucket.id
+  target_prefix = "s3-logs/"
+}
+
+# CORRECCIÓN: Bucket para logs
+resource "aws_s3_bucket" "log_bucket" {
+  bucket = "mi-bucket-devsecops-logs-12345"
+}
+
+# CORRECCIÓN: Versionado para logs
+resource "aws_s3_bucket_versioning" "log_versionado" {
+  bucket = aws_s3_bucket.log_bucket.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+# CORRECCIÓN: Grupo de seguridad
 resource "aws_security_group" "sg_seguro" {
   name        = "sg_ssh_restringido"
   description = "Grupo de seguridad con acceso SSH restringido a red privada"
+}
 
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["10.0.0.0/16"]
-    description = "Acceso SSH restringido a red privada"
-  }
+resource "aws_security_group_rule" "ingress_ssh" {
+  type              = "ingress"
+  from_port         = 22
+  to_port           = 22
+  protocol          = "tcp"
+  cidr_blocks       = ["10.0.0.0/16"]
+  description       = "Acceso SSH restringido a red privada"
+  security_group_id = aws_security_group.sg_seguro.id
+}
 
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-    description = "Salida a internet"
-  }
+# CORRECCIÓN: Egress restringido a solo lo necesario
+resource "aws_security_group_rule" "egress_http" {
+  type              = "egress"
+  from_port         = 80
+  to_port           = 80
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+  description       = "Salida HTTP"
+  security_group_id = aws_security_group.sg_seguro.id
 }
