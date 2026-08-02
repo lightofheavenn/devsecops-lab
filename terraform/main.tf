@@ -68,6 +68,11 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "cifrado_logs" {
 
 # Grupo de seguridad
 resource "aws_security_group" "sg_seguro" {
+  # === CAMBIO/AGREGADO AQUÍ ===
+  # Se omite CKV2_AWS_5 puntualmente para este recurso ya que no está adjuntado a una instancia EC2 o ENI en este laboratorio.
+  #checkov:skip=CKV2_AWS_5:Grupo de seguridad standalone para pruebas de DevSecOps
+  # ============================
+
   name        = "sg_ssh_restringido"
   description = "Grupo de seguridad con acceso SSH restringido a red privada"
 }
