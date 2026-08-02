@@ -74,6 +74,9 @@ jobs:
     env:
       REGISTRY: ghcr.io
       IMAGE_NAME: ${{ github.repository }}
+    # Declaramos los outputs para pasarlos al Job 6
+    outputs:
+      image_digest: ${{ steps.push.outputs.digest }}
     steps:
       - uses: actions/checkout@v4
 
@@ -120,6 +123,7 @@ jobs:
           ignore-unfixed: true
 
       - name: Publicar Imagen en GHCR
+        id: push # <--- ID AGREGADO AQUÍ PARA CAPTURAR EL DIGEST
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -145,7 +149,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Firmar Imagen mediante Sigstore (OIDC Keyless)
+      - name: Firmar Imagen mediante Sigstore (Usando Digest)
         run: |
-          IMAGE_REF="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}"
-          cosign sign --yes "$IMAGE_REF"
+          # Firmamos directamente usando el Digest (ej: ghcr.io/repo/app@sha256:12345...)
+          cosign sign --yes "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ needs.build-and-sbom.outputs.image_digest }}"
