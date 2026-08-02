@@ -2,12 +2,12 @@ provider "aws" {
   region = "us-east-1"
 }
 
-# CORRECCIÓN: Bucket S3 con configuración completa
+# Bucket S3 principal
 resource "aws_s3_bucket" "bucket_seguro" {
   bucket = "mi-bucket-devsecops-demo-12345"
 }
 
-# CORRECCIÓN: Bloqueo de acceso público
+# Bloqueo de acceso público para el bucket principal
 resource "aws_s3_bucket_public_access_block" "publico" {
   bucket                  = aws_s3_bucket.bucket_seguro.id
   block_public_acls       = true
@@ -16,7 +16,7 @@ resource "aws_s3_bucket_public_access_block" "publico" {
   restrict_public_buckets = true
 }
 
-# CORRECCIÓN: Versionado habilitado
+# Versionado para el bucket principal
 resource "aws_s3_bucket_versioning" "versionado" {
   bucket = aws_s3_bucket.bucket_seguro.id
   versioning_configuration {
@@ -24,7 +24,7 @@ resource "aws_s3_bucket_versioning" "versionado" {
   }
 }
 
-# CORRECCIÓN: Cifrado KMS
+# Cifrado KMS para el bucket principal
 resource "aws_s3_bucket_server_side_encryption_configuration" "cifrado" {
   bucket = aws_s3_bucket.bucket_seguro.id
   rule {
@@ -34,19 +34,21 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "cifrado" {
   }
 }
 
-# CORRECCIÓN: Logging habilitado
-resource "aws_s3_bucket_logging" "logging" {
-  bucket = aws_s3_bucket.bucket_seguro.id
-  target_bucket = aws_s3_bucket.log_bucket.id
-  target_prefix = "s3-logs/"
-}
-
-# CORRECCIÓN: Bucket para logs
+# Bucket para logs
 resource "aws_s3_bucket" "log_bucket" {
   bucket = "mi-bucket-devsecops-logs-12345"
 }
 
-# CORRECCIÓN: Versionado para logs
+# Bloqueo de acceso público para el bucket de logs
+resource "aws_s3_bucket_public_access_block" "publico_logs" {
+  bucket                  = aws_s3_bucket.log_bucket.id
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+# Versionado para el bucket de logs
 resource "aws_s3_bucket_versioning" "log_versionado" {
   bucket = aws_s3_bucket.log_bucket.id
   versioning_configuration {
@@ -54,7 +56,17 @@ resource "aws_s3_bucket_versioning" "log_versionado" {
   }
 }
 
-# CORRECCIÓN: Grupo de seguridad
+# Cifrado KMS para el bucket de logs
+resource "aws_s3_bucket_server_side_encryption_configuration" "cifrado_logs" {
+  bucket = aws_s3_bucket.log_bucket.id
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "aws:kms"
+    }
+  }
+}
+
+# Grupo de seguridad
 resource "aws_security_group" "sg_seguro" {
   name        = "sg_ssh_restringido"
   description = "Grupo de seguridad con acceso SSH restringido a red privada"
@@ -70,7 +82,6 @@ resource "aws_security_group_rule" "ingress_ssh" {
   security_group_id = aws_security_group.sg_seguro.id
 }
 
-# CORRECCIÓN: Egress restringido a solo lo necesario
 resource "aws_security_group_rule" "egress_http" {
   type              = "egress"
   from_port         = 80
